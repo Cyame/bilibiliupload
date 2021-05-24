@@ -24,7 +24,15 @@ from ..engine.upload import UploadBase, logger
 
 @Plugin.upload(platform="bili_web")
 class BiliWeb(UploadBase):
-    def __init__(self, principal, data, user, lines='AUTO', threads=3, tid=174, tags=None, cover_path=None):
+    def __init__(self,
+                 principal,
+                 data,
+                 user,
+                 lines='AUTO',
+                 threads=3,
+                 tid=174,
+                 tags=None,
+                 cover_path=None):
         super().__init__(principal, data, persistence_path='bili.cookie')
         if tags is None:
             tags = ['星际争霸2', '电子竞技']
@@ -40,17 +48,19 @@ class BiliWeb(UploadBase):
         with BiliBili(video) as bili:
             bili.login(self.persistence_path, self.user)
             for file in file_list:
-                video_part = bili.upload_file(file, self.lines, self.threads)  # 上传视频
+                video_part = bili.upload_file(file, self.lines,
+                                              self.threads)  # 上传视频
                 video.videos.append(video_part)  # 添加已经上传的视频
             video.title = self.data["format_title"]
-            video.desc = '''这个自动录制上传的小程序开源在Github：http://t.cn/RgapTpf(或者在Github搜索ForgQi)
-                交流群：837362626'''
+            video.desc = '''===本投稿为自动录制上传===
+                         服务部署来自 茶目Official'''
             video.source = self.data["url"]  # 添加转载地址说明
             # 设置视频分区,默认为174 生活，其他分区
             video.tid = self.tid
             video.set_tag(self.tags)
             if self.cover_path:
-                video.cover = bili.cover_up(self.cover_path).replace('http:', '')
+                video.cover = bili.cover_up(self.cover_path).replace(
+                    'http:', '')
             ret = bili.submit()  # 提交视频
         logger.info(f"上传成功: {ret}")
         self.remove_filelist(file_list)
@@ -62,10 +72,14 @@ class BiliBili:
         self.app_key = 'aae92bc66f3edfab'
         self.__session = requests.Session()
         self.video = video
-        self.__session.mount('https://', HTTPAdapter(max_retries=Retry(total=5, method_whitelist=False)))
+        self.__session.mount(
+            'https://',
+            HTTPAdapter(max_retries=Retry(total=5, method_whitelist=False)))
         self.__session.headers.update({
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/63.0.3239.108",
-            "Referer": "https://www.bilibili.com/", 'Connection': 'keep-alive'
+            "User-Agent":
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/63.0.3239.108",
+            "Referer": "https://www.bilibili.com/",
+            'Connection': 'keep-alive'
         })
         self.cookies = None
         self.access_token = None
@@ -101,15 +115,17 @@ class BiliBili:
 
     def store(self):
         with open(self.persistence_path, "w") as f:
-            json.dump({**self.cookies,
-                       'access_token': self.access_token,
-                       'refresh_token': self.refresh_token
-                       }, f)
+            json.dump(
+                {
+                    **self.cookies, 'access_token': self.access_token,
+                    'refresh_token': self.refresh_token
+                }, f)
 
     def login_by_password(self, username, password):
         print('使用账号上传')
         key_hash, pub_key = self.get_key()
-        encrypt_password = base64.b64encode(rsa.encrypt(f'{key_hash}{password}'.encode(), pub_key))
+        encrypt_password = base64.b64encode(
+            rsa.encrypt(f'{key_hash}{password}'.encode(), pub_key))
         payload = {
             "actionKey": 'appkey',
             "appkey": self.app_key,
@@ -128,10 +144,15 @@ class BiliBili:
             "username": username,
             "validate": "",
         }
-        response = self.__session.post("https://passport.bilibili.com/api/v3/oauth2/login", timeout=5,
-                                       data={**payload, 'sign': self.sign(parse.urlencode(payload))})
+        response = self.__session.post(
+            "https://passport.bilibili.com/api/v3/oauth2/login",
+            timeout=5,
+            data={
+                **payload, 'sign': self.sign(parse.urlencode(payload))
+            })
         r = response.json()
-        if r['code'] != 0 or r.get('data') is None or r['data'].get('cookie_info') is None:
+        if r['code'] != 0 or r.get('data') is None or r['data'].get(
+                'cookie_info') is None:
             raise RuntimeError(r)
         try:
             for cookie in r['data']['cookie_info']['cookies']:
@@ -151,7 +172,8 @@ class BiliBili:
         if 'bili_jct' in cookie:
             self.__bili_jct = cookie["bili_jct"]
 
-        data = self.__session.get("https://api.bilibili.com/x/web-interface/nav", timeout=5).json()
+        data = self.__session.get(
+            "https://api.bilibili.com/x/web-interface/nav", timeout=5).json()
         if data["code"] != 0:
             raise Exception(data)
 
@@ -170,10 +192,12 @@ class BiliBili:
         response = self.__session.post(url, data=payload, timeout=5)
         r = response.json()
         if r and r["code"] == 0:
-            return r['data']['hash'], rsa.PublicKey.load_pkcs1_openssl_pem(r['data']['key'].encode())
+            return r['data']['hash'], rsa.PublicKey.load_pkcs1_openssl_pem(
+                r['data']['key'].encode())
 
     def probe(self):
-        ret = self.__session.get('https://member.bilibili.com/preupload?r=probe', timeout=5).json()
+        ret = self.__session.get(
+            'https://member.bilibili.com/preupload?r=probe', timeout=5).json()
         logger.info(f"线路:{ret['lines']}")
         data, auto_os = None, None
         min_cost = 0
@@ -184,7 +208,10 @@ class BiliBili:
             data = bytes(int(1024 * 0.1 * 1024))
         for line in ret['lines']:
             start = time.perf_counter()
-            test = self.__session.request(method, f"https:{line['probe_url']}", data=data, timeout=30)
+            test = self.__session.request(method,
+                                          f"https:{line['probe_url']}",
+                                          data=data,
+                                          timeout=30)
             cost = time.perf_counter() - start
             print(line['query'], cost)
             if test.status_code != 200:
@@ -206,18 +233,32 @@ class BiliBili:
         if not self._auto_os:
             self._auto_os = self.probe()
             if lines == 'kodo':
-                self._auto_os = {"os": "kodo", "query": "bucket=bvcupcdnkodobm&probe_version=20200810",
-                                 "probe_url": "//up-na0.qbox.me/crossdomain.xml"}
+                self._auto_os = {
+                    "os": "kodo",
+                    "query": "bucket=bvcupcdnkodobm&probe_version=20200810",
+                    "probe_url": "//up-na0.qbox.me/crossdomain.xml"
+                }
             if lines == 'bda2':
-                self._auto_os = {"os": "upos", "query": "upcdn=bda2&probe_version=20200810",
-                                 "probe_url": "//upos-sz-upcdnbda2.bilivideo.com/OK"}
+                self._auto_os = {
+                    "os": "upos",
+                    "query": "upcdn=bda2&probe_version=20200810",
+                    "probe_url": "//upos-sz-upcdnbda2.bilivideo.com/OK"
+                }
             if lines == 'ws':
-                self._auto_os = {"os": "upos", "query": "upcdn=ws&probe_version=20200810",
-                                 "probe_url": "//upos-sz-upcdnws.bilivideo.com/OK"}
+                self._auto_os = {
+                    "os": "upos",
+                    "query": "upcdn=ws&probe_version=20200810",
+                    "probe_url": "//upos-sz-upcdnws.bilivideo.com/OK"
+                }
             if lines == 'qn':
-                self._auto_os = {"os": "upos", "query": "upcdn=qn&probe_version=20200810",
-                                 "probe_url": "//upos-sz-upcdnqn.bilivideo.com/OK"}
-            logger.info(f"线路选择{self._auto_os['os']}: {self._auto_os['query']}. time: {self._auto_os.get('cost')}")
+                self._auto_os = {
+                    "os": "upos",
+                    "query": "upcdn=qn&probe_version=20200810",
+                    "probe_url": "//upos-sz-upcdnqn.bilivideo.com/OK"
+                }
+            logger.info(
+                f"线路选择{self._auto_os['os']}: {self._auto_os['query']}. time: {self._auto_os.get('cost')}"
+            )
         if self._auto_os['os'] == 'upos':
             upload = self.upos
         elif self._auto_os['os'] == 'kodo':
@@ -233,7 +274,8 @@ class BiliBili:
         with open(filepath, 'rb') as f:
             query = {
                 'r': self._auto_os['os'],
-                'profile': 'ugcupos/bup' if 'upos' == self._auto_os['os'] else "ugcupos/bupfetch",
+                'profile': 'ugcupos/bup'
+                if 'upos' == self._auto_os['os'] else "ugcupos/bupfetch",
                 'ssl': 0,
                 'version': '2.8.12',
                 'build': 2081200,
@@ -241,7 +283,8 @@ class BiliBili:
                 'size': total_size,
             }
             ret = self.__session.get(
-                f"https://member.bilibili.com/preupload?{self._auto_os['query']}", params=query,
+                f"https://member.bilibili.com/preupload?{self._auto_os['query']}",
+                params=query,
                 timeout=5)
             return asyncio.run(upload(f, total_size, ret.json(), tasks=tasks))
 
@@ -263,25 +306,38 @@ class BiliBili:
 
         async def upload_chunk(session, chunks_data, params):
             async with session.post(f'{url}/{len(chunks_data)}',
-                                    data=chunks_data, headers=headers) as response:
+                                    data=chunks_data,
+                                    headers=headers) as response:
                 end = time.perf_counter() - start
                 ctx = await response.json()
                 parts.append({"index": params['chunk'], "ctx": ctx['ctx']})
-                sys.stdout.write(f"\r{params['end'] / 1000 / 1000 / end:.2f}MB/s "
-                                 f"=> {params['partNumber'] / chunks:.1%}")
+                sys.stdout.write(
+                    f"\r{params['end'] / 1000 / 1000 / end:.2f}MB/s "
+                    f"=> {params['partNumber'] / chunks:.1%}")
 
         start = time.perf_counter()
         await self._upload({}, file, chunk_size, upload_chunk, tasks=tasks)
         cost = time.perf_counter() - start
 
-        logger.info(f'{filename} uploaded >> {total_size / 1000 / 1000 / cost:.2f}MB/s')
+        logger.info(
+            f'{filename} uploaded >> {total_size / 1000 / 1000 / cost:.2f}MB/s'
+        )
         parts.sort(key=lambda x: x['index'])
-        self.__session.post(f"{endpoint}/mkfile/{total_size}/key/{base64.urlsafe_b64encode(key.encode()).decode()}",
-                            data=','.join(map(lambda x: x['ctx'], parts)), headers=headers, timeout=10)
-        r = self.__session.post(f"https:{fetch_url}", headers=fetch_headers, timeout=5).json()
+        self.__session.post(
+            f"{endpoint}/mkfile/{total_size}/key/{base64.urlsafe_b64encode(key.encode()).decode()}",
+            data=','.join(map(lambda x: x['ctx'], parts)),
+            headers=headers,
+            timeout=10)
+        r = self.__session.post(f"https:{fetch_url}",
+                                headers=fetch_headers,
+                                timeout=5).json()
         if r["OK"] != 1:
             raise Exception(r)
-        return {"title": splitext(filename)[0], "filename": bili_filename, "desc": ""}
+        return {
+            "title": splitext(filename)[0],
+            "filename": bili_filename,
+            "desc": ""
+        }
 
     async def upos(self, file, total_size, ret, tasks=3):
         filename = file.name
@@ -291,30 +347,41 @@ class BiliBili:
         biz_id = ret["biz_id"]
         upos_uri = ret["upos_uri"]
         url = f"https:{endpoint}/{upos_uri.replace('upos://', '')}"  # 视频上传路径
-        headers = {
-            "X-Upos-Auth": auth
-        }
+        headers = {"X-Upos-Auth": auth}
         # 向上传地址申请上传，得到上传id等信息
-        upload_id = self.__session.post(f'{url}?uploads&output=json', timeout=5,
+        upload_id = self.__session.post(f'{url}?uploads&output=json',
+                                        timeout=5,
                                         headers=headers).json()["upload_id"]
         # 开始上传
         parts = []  # 分块信息
         chunks = math.ceil(total_size / chunk_size)  # 获取分块数量
 
         async def upload_chunk(session, chunks_data, params):
-            async with session.put(url, params=params, raise_for_status=True,
-                                   data=chunks_data, headers=headers):
+            async with session.put(url,
+                                   params=params,
+                                   raise_for_status=True,
+                                   data=chunks_data,
+                                   headers=headers):
                 end = time.perf_counter() - start
-                parts.append({"partNumber": params['chunk'] + 1, "eTag": "etag"})
-                sys.stdout.write(f"\r{params['end'] / 1000 / 1000 / end:.2f}MB/s "
-                                 f"=> {params['partNumber'] / chunks:.1%}")
+                parts.append({
+                    "partNumber": params['chunk'] + 1,
+                    "eTag": "etag"
+                })
+                sys.stdout.write(
+                    f"\r{params['end'] / 1000 / 1000 / end:.2f}MB/s "
+                    f"=> {params['partNumber'] / chunks:.1%}")
 
         start = time.perf_counter()
-        await self._upload({
-            'uploadId': upload_id,
-            'chunks': chunks,
-            'total': total_size
-        }, file, chunk_size, upload_chunk, tasks=tasks)
+        await self._upload(
+            {
+                'uploadId': upload_id,
+                'chunks': chunks,
+                'total': total_size
+            },
+            file,
+            chunk_size,
+            upload_chunk,
+            tasks=tasks)
         cost = time.perf_counter() - start
         p = {
             'name': filename,
@@ -323,11 +390,23 @@ class BiliBili:
             'output': 'json',
             'profile': 'ugcupos/bup'
         }
-        r = self.__session.post(url, params=p, json={"parts": parts}, headers=headers, timeout=15).json()
-        logger.info(f'{filename} uploaded >> {total_size / 1000 / 1000 / cost:.2f}MB/s. {r}')
+        r = self.__session.post(url,
+                                params=p,
+                                json={
+                                    "parts": parts
+                                },
+                                headers=headers,
+                                timeout=15).json()
+        logger.info(
+            f'{filename} uploaded >> {total_size / 1000 / 1000 / cost:.2f}MB/s. {r}'
+        )
         if r.get('OK') != 1:
             raise Exception(r)
-        return {"title": splitext(filename)[0], "filename": splitext(basename(upos_uri))[0], "desc": ""}
+        return {
+            "title": splitext(filename)[0],
+            "filename": splitext(basename(upos_uri))[0],
+            "desc": ""
+        }
 
     @staticmethod
     async def _upload(params, file, chunk_size, afunc, tasks=3):
@@ -349,7 +428,8 @@ class BiliBili:
                         await afunc(session, chunks_data, clone)
                         break
                     except (asyncio.TimeoutError, aiohttp.ClientError) as e:
-                        logger.error(f"retry chunk{clone['chunk']} >> {i+1}. {e}")
+                        logger.error(
+                            f"retry chunk{clone['chunk']} >> {i+1}. {e}")
 
         async with aiohttp.ClientSession() as session:
             await asyncio.gather(*[upload_chunk() for _ in range(tasks)])
@@ -357,17 +437,22 @@ class BiliBili:
     def submit(self):
         if not self.video.title:
             self.video.title = self.video.videos[0]["title"]
-        self.__session.get('https://member.bilibili.com/x/geetest/pre/add', timeout=5)
-        myinfo = self.__session.get('https://member.bilibili.com/x/web/archive/pre?lang=cn',
-                                    timeout=15).json()['data']['myinfo']
-        myinfo['total_info'] = self.__session.get('https://member.bilibili.com/x/web/index/stat',
-                                                  timeout=15).json()['data']
+        self.__session.get('https://member.bilibili.com/x/geetest/pre/add',
+                           timeout=5)
+        myinfo = self.__session.get(
+            'https://member.bilibili.com/x/web/archive/pre?lang=cn',
+            timeout=15).json()['data']['myinfo']
+        myinfo['total_info'] = self.__session.get(
+            'https://member.bilibili.com/x/web/index/stat',
+            timeout=15).json()['data']
         user_weight = 2 if myinfo['level'] > 3 \
             and myinfo['total_info'] and myinfo['total_info']['total_fans'] > 100 else 1
         if user_weight == 2:
             logger.info(f'用户权重: {user_weight} => 网页端分p数量不受限制使用网页端api提交')
-            ret = self.__session.post(f'https://member.bilibili.com/x/vu/web/add?csrf={self.__bili_jct}', timeout=5,
-                                      json=asdict(self.video)).json()
+            ret = self.__session.post(
+                f'https://member.bilibili.com/x/vu/web/add?csrf={self.__bili_jct}',
+                timeout=5,
+                json=asdict(self.video)).json()
             if ret["code"] == 0:
                 return ret
             elif ret["code"] == 21138:
@@ -380,8 +465,10 @@ class BiliBili:
             self.login_by_password(**config['user']['account'])
             self.store()
         while True:
-            ret = self.__session.post(f'http://member.bilibili.com/x/vu/client/add?access_key={self.access_token}',
-                                      timeout=5, json=asdict(self.video)).json()
+            ret = self.__session.post(
+                f'http://member.bilibili.com/x/vu/client/add?access_key={self.access_token}',
+                timeout=5,
+                json=asdict(self.video)).json()
             if ret['code'] == -101:
                 logger.info(f'刷新token{ret}')
                 self.login_by_password(**config['user']['account'])
@@ -416,14 +503,23 @@ class BiliBili:
         r = self.__session.post(
             url='https://member.bilibili.com/x/vu/web/cover/up',
             data={
-                'cover': b'data:image/jpeg;base64,' + (base64.b64encode(buffered.getvalue())),
-                'csrf': self.__bili_jct
-            }, timeout=30
-        )
+                'cover':
+                b'data:image/jpeg;base64,' +
+                (base64.b64encode(buffered.getvalue())),
+                'csrf':
+                self.__bili_jct
+            },
+            timeout=30)
         buffered.close()
         return r.json()['data']['url']
 
-    def get_tags(self, upvideo, typeid="", desc="", cover="", groupid=1, vfea=""):
+    def get_tags(self,
+                 upvideo,
+                 typeid="",
+                 desc="",
+                 cover="",
+                 groupid=1,
+                 vfea=""):
         """
         上传视频后获得推荐标签
         :param vfea:

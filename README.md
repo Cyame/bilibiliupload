@@ -1,6 +1,9 @@
-# bilibiliupload
+# bilibiliupload for myemie
+
+A fork Project of [bilibiliupload](github.com/ForgQi/bilibiliupload)
+
 ![](https://img.shields.io/badge/python-v3.7%2B-blue)
-![GitHub](https://img.shields.io/github/license/ForgQi/bilibiliupload)
+![GitHub](https://img.shields.io/github/license/Cyame/bilibiliupload)
 
 支持自动录制各大直播平台，上传直播录像到bilibili。  
 

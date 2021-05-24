@@ -53,7 +53,9 @@ class BiliChrome(UploadBase):
         options = webdriver.ChromeOptions()
 
         options.add_argument('headless')
-        self.driver = webdriver.Chrome(executable_path=config.get('chromedriver_path'), chrome_options=options)
+        self.driver = webdriver.Chrome(
+            executable_path=config.get('chromedriver_path'),
+            chrome_options=options)
         # service_log_path=service_log_path)
         try:
             self.driver.get("https://www.bilibili.com")
@@ -81,11 +83,14 @@ class BiliChrome(UploadBase):
 
             self.add_information()
 
-            self.driver.find_element_by_xpath('//*[@class="upload-v2-container"]/div[2]/div[3]/div[5]/span[1]').click()
+            self.driver.find_element_by_xpath(
+                '//*[@class="upload-v2-container"]/div[2]/div[3]/div[5]/span[1]'
+            ).click()
             # screen_shot = driver.save_screenshot('bin/1.png')
             # print('截图')
             time.sleep(3)
-            upload_success = self.driver.find_element_by_xpath(r'//*[@id="app"]/div/div[3]/h3').text
+            upload_success = self.driver.find_element_by_xpath(
+                r'//*[@id="app"]/div/div[3]/h3').text
             if upload_success == '':
                 self.driver.save_screenshot('err.png')
                 logger.info('稿件提交失败，截图记录')
@@ -109,8 +114,10 @@ class BiliChrome(UploadBase):
         logger.info('准备更新cookie')
         # screen_shot = driver.save_screenshot('bin/1.png')
         WebDriverWait(self.driver, 10).until(
-            ec.presence_of_element_located((By.XPATH, r'//*[@id="login-username"]')))
-        username = self.driver.find_element_by_xpath(r'//*[@id="login-username"]')
+            ec.presence_of_element_located(
+                (By.XPATH, r'//*[@id="login-username"]')))
+        username = self.driver.find_element_by_xpath(
+            r'//*[@id="login-username"]')
         username.send_keys(config['user']['account']['username'])
         password = self.driver.find_element_by_xpath('//*[@id="login-passwd"]')
         password.send_keys(config['user']['account']['password'])
@@ -149,41 +156,50 @@ class BiliChrome(UploadBase):
             logger.debug('点击')
         while True:
             try:
-                info = self.driver.find_elements_by_class_name(r'item-upload-info')
+                info = self.driver.find_elements_by_class_name(
+                    r'item-upload-info')
                 for t in info:
                     if t.text != '':
                         print(t.text)
                 time.sleep(10)
-                text = self.driver.find_elements_by_xpath(r'//*[@class="item-upload-info"]/span')
+                text = self.driver.find_elements_by_xpath(
+                    r'//*[@class="item-upload-info"]/span')
                 aggregate = set()
                 for s in text:
                     if s.text != '':
                         aggregate.add(s.text)
                         print(s.text)
 
-                if len(aggregate) == 1 and ('Upload complete' in aggregate or '上传完成' in aggregate):
+                if len(aggregate) == 1 and ('Upload complete' in aggregate
+                                            or '上传完成' in aggregate):
                     break
             except selenium.common.exceptions.StaleElementReferenceException:
-                logger.exception("selenium.common.exceptions.StaleElementReferenceException")
+                logger.exception(
+                    "selenium.common.exceptions.StaleElementReferenceException"
+                )
         logger.info('上传%s个数%s' % (formate_title, len(info)))
 
     def add_information(self):
         link = self.data.get("url")
         # 点击模板
-        self.driver.find_element_by_xpath(r'//*[@class="normal-title-wrp"]/div/p').click()
-        self.driver.find_element_by_class_name(r'template-list-small-item').click()
+        self.driver.find_element_by_xpath(
+            r'//*[@class="normal-title-wrp"]/div/p').click()
+        self.driver.find_element_by_class_name(
+            r'template-list-small-item').click()
         # driver.find_element_by_xpath(
         #     r'//*[@id="app"]/div[3]/div[2]/div[3]/div[1]/div[1]/div/div[2]/div[1]').click()
         # 输入转载来源
         input_o = self.driver.find_element_by_xpath(
-            '//*[@class="upload-v2-container"]/div[2]/div[3]/div[1]/div[4]/div[3]/div/div/input')
+            '//*[@class="upload-v2-container"]/div[2]/div[3]/div[1]/div[4]/div[3]/div/div/input'
+        )
         input_o.send_keys(link)
         # 选择分区
         # driver.find_element_by_xpath(r'//*[@id="item"]/div/div[2]/div[3]/div[2]/div[2]/div[1]/div[2]/div[2]/div[1]/div[3]/div').click()
         # driver.find_element_by_xpath(r'//*[@id="item"]/div/div[2]/div[3]/div[2]/div[2]/div[1]/div[2]/div[2]/div[1]/div[3]/div[2]/div[6]').click()
         # 稿件标题
         title = self.driver.find_element_by_xpath(
-            '//*[@class="upload-v2-container"]/div[2]/div[3]/div[1]/div[8]/div[2]/div/div/input')
+            '//*[@class="upload-v2-container"]/div[2]/div[3]/div[1]/div[8]/div[2]/div/div/input'
+        )
         title.send_keys(Keys.CONTROL + 'a')
         title.send_keys(Keys.BACKSPACE)
         title.send_keys(self.data["format_title"])
@@ -198,7 +214,6 @@ class BiliChrome(UploadBase):
         # text_1.send_keys('星际争霸2')
         # 简介
         text_2 = self.driver.find_element_by_xpath(
-            '//*[@class="upload-v2-container"]/div[2]/div[3]/div[1]/div[12]/div[2]/div/textarea')
-        text_2.send_keys('职业选手直播第一视角录像。这个自动录制上传的小程序开源在Github：'
-                         'http://t.cn/RgapTpf(或者在Github搜索ForgQi)\n'
-                         '交流群：837362626')
+            '//*[@class="upload-v2-container"]/div[2]/div[3]/div[1]/div[12]/div[2]/div/textarea'
+        )
+        text_2.send_keys('===本投稿为自动录制上传===' '服务部署来自 茶目Official')
